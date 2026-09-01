@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>ハビットスタンプ</title>
+
+<!-- PWA / iPhoneホーム画面対応 -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#FCF8F2">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="ハビットスタンプ">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<header class="top-bar">
+  <h1>ハビットスタンプ</h1>
+  <div class="top-bar-right">
+    <span id="monthLabel" class="month-label"></span>
+    <button id="resetBtn" type="button" class="reset-btn">↺ 今月をリセット</button>
+  </div>
+</header>
+
+<p class="hint">マスをタップ ＝ ✓スタンプ。もう一度タップで解除。</p>
+
+<main>
+  <div class="tracker-wrap" id="trackerWrap">
+    <div class="tracker-inner" id="trackerInner">
+      <img src="tracker.png" alt="なりたい自分になるために ハビットトラッカー" class="tracker-img" draggable="false">
+      <div class="overlay" id="overlay"></div>
+    </div>
+  </div>
+</main>
+
+<!-- リセット確認ダイアログ -->
+<div class="modal-backdrop" id="modalBackdrop">
+  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle">
+    <p id="modalTitle">今月の記録をリセットしますか？</p>
+    <p class="modal-sub">この操作は取り消せません。</p>
+    <div class="modal-actions">
+      <button id="modalCancel" type="button" class="modal-btn cancel">キャンセル</button>
+      <button id="modalConfirm" type="button" class="modal-btn confirm">リセットする</button>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
