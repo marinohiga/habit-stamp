@@ -6,6 +6,8 @@
   --accent-strong: #dba25a;
   --pink: #F6A9B1;
   --pink-deep: #e4818d;
+  --cond: #8AAE8F;
+  --cond-deep: #6f9975;
   --border: #ecdfcc;
   --today-wash: rgba(246,169,177,0.30);
   --oob-wash: rgba(255,255,255,0.62);
@@ -83,8 +85,9 @@ main{ padding: 6px 0 48px; }
 }
 .tracker-inner{
   position: relative;
-  width: max(1800px, 100%);   /* 十分なタップ領域を確保するための最小幅 */
+  width: max(var(--zoom-min-width, 1800px), 100%);   /* 十分なタップ領域を確保するための最小幅 */
   margin: 0 auto;
+  transition: width .22s ease;
 }
 .tracker-img{
   display:block;
@@ -150,6 +153,29 @@ main{ padding: 6px 0 48px; }
   opacity: 1;
   transform: scale(1);
 }
+.cell-btn .stamp.num{
+  background: var(--cond);
+  font-size: 14px;
+}
+
+/* ---------- 全体表示／拡大表示 切り替えボタン ---------- */
+.zoom-toggle{
+  position: fixed;
+  right: 16px;
+  bottom: 20px;
+  z-index: 15;
+  padding: 10px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--accent-strong);
+  background: rgba(255,255,255,0.94);
+  color: #8a6a3f;
+  font-size: 13px;
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,.18);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+.zoom-toggle:active{ background: var(--accent); }
 
 /* ---------- reset confirm modal ---------- */
 .modal-backdrop{
@@ -172,7 +198,7 @@ main{ padding: 6px 0 48px; }
   text-align: center;
   box-shadow: 0 10px 30px rgba(0,0,0,.22);
 }
-.modal-box p#modalTitle{
+.modal-box .modal-title{
   margin: 0 0 6px;
   font-size: 15px;
   font-weight: 700;
@@ -192,3 +218,26 @@ main{ padding: 6px 0 48px; }
 }
 .modal-btn.cancel{ background:#f1ece2; color: var(--ink); }
 .modal-btn.confirm{ background: var(--pink-deep); color:#fff; font-weight:700; }
+
+/* ---------- 1〜10 数値選択モーダル ---------- */
+.number-grid{
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 8px;
+  margin: 14px 0 18px;
+}
+.number-grid button{
+  aspect-ratio: 1 / 1;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #faf6ee;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 700;
+  padding: 0;
+}
+.number-grid button.selected{
+  background: var(--cond);
+  border-color: transparent;
+  color: #fff;
+}

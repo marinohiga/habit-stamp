@@ -1,5 +1,5 @@
 // ハビットスタンプ: オフラインでも使えるようにアプリ一式をキャッシュする
-const CACHE_NAME = 'habit-stamp-v1';
+const CACHE_NAME = 'habit-stamp-v2';
 const ASSETS = [
   './',
   './index.html',

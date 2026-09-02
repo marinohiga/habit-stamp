@@ -14,14 +14,19 @@
     80.287, 82.724, 85.161, 87.511, 89.948, 92.298, 94.696, 97.128
   ];
 
-  // 対象8項目・行の境界線（9個の点＝8行）
+  // 対象8項目・行の境界線（9個の点＝8行）／✓スタンプ方式
   const ROW_PCT = [
     17.166, 21.658, 26.282, 30.789, 35.318, 39.627, 43.937, 48.320, 52.776
   ];
 
+  // 体調・メンタル4項目の境界線（5個の点＝4行）／1〜10選択方式
+  const ROW2_PCT = [
+    52.776, 57.110, 61.468, 65.851, 70.161
+  ];
+
   // 日付ヘッダー行の上端（今日ハイライト帯の開始位置）
   const HEADER_TOP = 12.235;
-  const GRID_BOTTOM = ROW_PCT[ROW_PCT.length - 1];
+  const GRID_BOTTOM = ROW2_PCT[ROW2_PCT.length - 1];
 
   const ROWS = [
     { id: 'pilates',  label: 'ピラティス' },
@@ -32,6 +37,13 @@
     { id: 'meal',     label: 'バランスのよい食事' },
     { id: 'water',    label: '水を1.5L以上飲む' },
     { id: 'bath',     label: '湯船につかる・リラックス' }
+  ];
+
+  const ROWS2 = [
+    { id: 'fatigue', label: '疲労度' },
+    { id: 'mood',    label: '気分' },
+    { id: 'soreness',label: '首・肩・腰のこり・痛み' },
+    { id: 'friFatigue', label: '金曜日の疲労度' }
   ];
 
   /* =====================================================================
@@ -148,6 +160,115 @@
     }
   });
 
+  // 体調・メンタル4項目 × 31日ぶんの透明タップボタンを生成（タップで1〜10選択モーダルを開く）
+  ROWS2.forEach(function (row, ri) {
+    const top = ROW2_PCT[ri];
+    const bottom = ROW2_PCT[ri + 1];
+
+    for (let day = 1; day <= 31; day++) {
+      const left = COL_PCT[day - 1];
+      const right = COL_PCT[day];
+      const key = row.id + '_' + day;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'cell-btn';
+      btn.dataset.key = key;
+      btn.dataset.label = row.label;
+      btn.dataset.day = day;
+      btn.setAttribute('aria-label', month + '月' + day + '日 ' + row.label + '（1〜10を選択）');
+      setBox(btn, left, top, right - left, bottom - top);
+
+      const stamp = document.createElement('span');
+      stamp.className = 'stamp num';
+      stamp.setAttribute('aria-hidden', 'true');
+      btn.appendChild(stamp);
+
+      if (day > daysInMonth) {
+        btn.disabled = true;
+      } else {
+        if (data[key]) {
+          btn.classList.add('checked');
+          stamp.textContent = data[key];
+        }
+        btn.addEventListener('click', function () {
+          openNumberModal(btn);
+        });
+      }
+
+      overlay.appendChild(btn);
+    }
+  });
+
+  /* =====================================================================
+     1〜10 数値選択モーダル（体調・メンタル用）
+     ===================================================================== */
+
+  const numberModalBackdrop = document.getElementById('numberModalBackdrop');
+  const numberModalTitle = document.getElementById('numberModalTitle');
+  const numberGrid = document.getElementById('numberGrid');
+  const numberClear = document.getElementById('numberClear');
+  const numberClose = document.getElementById('numberClose');
+
+  // 1〜10のボタンをあらかじめ作っておく
+  for (let n = 1; n <= 10; n++) {
+    const nBtn = document.createElement('button');
+    nBtn.type = 'button';
+    nBtn.textContent = String(n);
+    nBtn.dataset.value = n;
+    numberGrid.appendChild(nBtn);
+  }
+
+  let activeNumberBtn = null;
+
+  function openNumberModal(cellBtn) {
+    activeNumberBtn = cellBtn;
+    const key = cellBtn.dataset.key;
+    const current = data[key] || null;
+
+    numberModalTitle.textContent = month + '月' + cellBtn.dataset.day + '日　' + cellBtn.dataset.label;
+    numberGrid.querySelectorAll('button').forEach(function (nBtn) {
+      nBtn.classList.toggle('selected', String(current) === nBtn.dataset.value);
+    });
+    numberModalBackdrop.classList.add('show');
+  }
+
+  function closeNumberModal() {
+    numberModalBackdrop.classList.remove('show');
+    activeNumberBtn = null;
+  }
+
+  function applyNumberToCell(value) {
+    if (!activeNumberBtn) return;
+    const key = activeNumberBtn.dataset.key;
+    const stamp = activeNumberBtn.querySelector('.stamp');
+    if (value === null) {
+      delete data[key];
+      activeNumberBtn.classList.remove('checked');
+      stamp.textContent = '';
+    } else {
+      data[key] = value;
+      activeNumberBtn.classList.add('checked');
+      stamp.textContent = String(value);
+    }
+    saveData(data);
+  }
+
+  numberGrid.addEventListener('click', function (e) {
+    const nBtn = e.target.closest('button');
+    if (!nBtn) return;
+    applyNumberToCell(Number(nBtn.dataset.value));
+    closeNumberModal();
+  });
+  numberClear.addEventListener('click', function () {
+    applyNumberToCell(null);
+    closeNumberModal();
+  });
+  numberClose.addEventListener('click', closeNumberModal);
+  numberModalBackdrop.addEventListener('click', function (e) {
+    if (e.target === numberModalBackdrop) closeNumberModal();
+  });
+
   /* =====================================================================
      今日の列が見えるように、横スクロール位置を自動調整
      ===================================================================== */
@@ -163,6 +284,27 @@
   }
   requestAnimationFrame(scrollToToday);
   window.addEventListener('load', scrollToToday);
+
+  /* =====================================================================
+     全体表示／拡大表示 切り替え
+     タップしやすい拡大表示を初期状態にしつつ、ボタンひとつで
+     画面幅にフィットした全体表示に切り替えられるようにする。
+     ===================================================================== */
+
+  const zoomToggleBtn = document.getElementById('zoomToggleBtn');
+  let isOverview = false;
+
+  zoomToggleBtn.addEventListener('click', function () {
+    isOverview = !isOverview;
+    trackerInner.style.setProperty('--zoom-min-width', isOverview ? '0px' : '1800px');
+    zoomToggleBtn.textContent = isOverview ? '🔍 拡大表示' : '⤢ 全体表示';
+    zoomToggleBtn.setAttribute('aria-pressed', isOverview ? 'true' : 'false');
+    if (isOverview) {
+      trackerWrap.scrollLeft = 0;
+    } else {
+      requestAnimationFrame(scrollToToday);
+    }
+  });
 
   /* =====================================================================
      リセット（確認ダイアログ付き）
@@ -187,7 +329,9 @@
     saveData(data);
     document.querySelectorAll('.cell-btn.checked').forEach(function (b) {
       b.classList.remove('checked');
-      b.setAttribute('aria-pressed', 'false');
+      if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
+      const stamp = b.querySelector('.stamp.num');
+      if (stamp) stamp.textContent = '';
     });
     modalBackdrop.classList.remove('show');
   });

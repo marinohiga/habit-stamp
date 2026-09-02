@@ -26,7 +26,7 @@
   </div>
 </header>
 
-<p class="hint">マスをタップ ＝ ✓スタンプ。もう一度タップで解除。</p>
+<p class="hint">運動・生活習慣はタップで✓。体調・メンタルはタップで1〜10を選択。</p>
 
 <main>
   <div class="tracker-wrap" id="trackerWrap">
@@ -37,14 +37,28 @@
   </div>
 </main>
 
+<button id="zoomToggleBtn" type="button" class="zoom-toggle" aria-pressed="false">⤢ 全体表示</button>
+
 <!-- リセット確認ダイアログ -->
 <div class="modal-backdrop" id="modalBackdrop">
   <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle">
-    <p id="modalTitle">今月の記録をリセットしますか？</p>
+    <p id="modalTitle" class="modal-title">今月の記録をリセットしますか？</p>
     <p class="modal-sub">この操作は取り消せません。</p>
     <div class="modal-actions">
       <button id="modalCancel" type="button" class="modal-btn cancel">キャンセル</button>
       <button id="modalConfirm" type="button" class="modal-btn confirm">リセットする</button>
+    </div>
+  </div>
+</div>
+
+<!-- 1〜10 数値選択ダイアログ（体調・メンタル用） -->
+<div class="modal-backdrop" id="numberModalBackdrop">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="numberModalTitle">
+    <p id="numberModalTitle" class="modal-title">–</p>
+    <div class="number-grid" id="numberGrid"></div>
+    <div class="modal-actions">
+      <button id="numberClear" type="button" class="modal-btn cancel">クリア</button>
+      <button id="numberClose" type="button" class="modal-btn cancel">閉じる</button>
     </div>
   </div>
 </div>
