@@ -2,7 +2,7 @@
 <html lang="ja">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <title>ハビットスタンプ</title>
 
 <!-- PWA / iPhoneホーム画面対応 -->
@@ -26,7 +26,7 @@
   </div>
 </header>
 
-<p class="hint">運動・生活習慣はタップで✓。体調・メンタルはタップで1〜10を選択。</p>
+<p class="hint">運動・生活習慣は✓、体調・メンタルは数字、ふりかえりは文章をタップで記録。ピンチで拡大・縮小できます。</p>
 
 <main>
   <div class="tracker-wrap" id="trackerWrap">
@@ -35,9 +35,13 @@
       <div class="overlay" id="overlay"></div>
     </div>
   </div>
-</main>
 
-<button id="zoomToggleBtn" type="button" class="zoom-toggle" aria-pressed="false">⤢ 全体表示</button>
+  <div class="extra-chip">
+    <span class="extra-chip-label">ストレッチ・ほぐし</span>
+    <span class="extra-chip-value" id="stretchChipValue">0</span>
+    <span class="extra-chip-unit">日</span>
+  </div>
+</main>
 
 <!-- リセット確認ダイアログ -->
 <div class="modal-backdrop" id="modalBackdrop">
@@ -59,6 +63,19 @@
     <div class="modal-actions">
       <button id="numberClear" type="button" class="modal-btn cancel">クリア</button>
       <button id="numberClose" type="button" class="modal-btn cancel">閉じる</button>
+    </div>
+  </div>
+</div>
+
+<!-- テキスト入力ダイアログ（ふりかえり／自分へのひとこと用） -->
+<div class="modal-backdrop" id="textModalBackdrop">
+  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="textModalTitle">
+    <p id="textModalTitle" class="modal-title">–</p>
+    <input type="text" id="textModalInput" class="text-input-field" maxlength="60" placeholder="入力してください">
+    <textarea id="textModalArea" class="text-input-area" maxlength="400" rows="5" placeholder="入力してください"></textarea>
+    <div class="modal-actions">
+      <button id="textModalClear" type="button" class="modal-btn cancel">クリア</button>
+      <button id="textModalSave" type="button" class="modal-btn confirm">保存</button>
     </div>
   </div>
 </div>

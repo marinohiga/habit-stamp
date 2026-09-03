@@ -14,7 +14,7 @@
     80.287, 82.724, 85.161, 87.511, 89.948, 92.298, 94.696, 97.128
   ];
 
-  // 対象8項目・行の境界線（9個の点＝8行）／✓スタンプ方式
+  // 運動・生活習慣8項目の境界線（9個の点＝8行）／✓スタンプ方式
   const ROW_PCT = [
     17.166, 21.658, 26.282, 30.789, 35.318, 39.627, 43.937, 48.320, 52.776
   ];
@@ -40,10 +40,28 @@
   ];
 
   const ROWS2 = [
-    { id: 'fatigue', label: '疲労度' },
-    { id: 'mood',    label: '気分' },
-    { id: 'soreness',label: '首・肩・腰のこり・痛み' },
-    { id: 'friFatigue', label: '金曜日の疲労度' }
+    { id: 'fatigue',     label: '疲労度' },
+    { id: 'mood',        label: '気分' },
+    { id: 'soreness',    label: '首・肩・腰のこり・痛み' },
+    { id: 'friFatigue',  label: '金曜日の疲労度' }
+  ];
+
+  // 今月のふりかえり：チェック項目の右の余白＝タップで一言メモ入力
+  const REFLECT_FIELDS = [
+    { key: 'reflectGood',   label: 'よくできたこと',               left: 14.36, top: 88.82, width: 22.11, height: 2.48 },
+    { key: 'reflectEffort', label: '工夫したこと',                 left: 13.05, top: 91.67, width: 23.41, height: 2.48 },
+    { key: 'reflectNext',   label: '来月に活かすこと・改善したいこと', left: 26.11, top: 94.52, width: 10.36, height: 2.48 }
+  ];
+
+  // 自分へのひとこと：白い枠＝タップで段落テキスト入力
+  const SELF_NOTE_BOX = { left: 67.89, top: 89.41, width: 31.16, height: 9.50 };
+
+  // 今月のまとめ：数字を表示する空白部分の位置
+  const SUMMARY_SPOTS = [
+    { key: 'exerciseDays', left: 49.78, top: 88.24, width: 6.35, height: 2.19 },
+    { key: 'pilates',      left: 48.22, top: 90.79, width: 6.88, height: 2.19 },
+    { key: 'cardio',       left: 48.56, top: 93.72, width: 6.18, height: 2.19 },
+    { key: 'strength',     left: 45.08, top: 96.64, width: 9.40, height: 2.19 }
   ];
 
   /* =====================================================================
@@ -56,6 +74,10 @@
   const today = now.getDate();
   const daysInMonth = new Date(year, month, 0).getDate();
   const STORAGE_KEY = 'habitStamp:' + year + '-' + String(month).padStart(2, '0');
+
+  function isFriday(y, m, d) {
+    return new Date(y, m - 1, d).getDay() === 5;
+  }
 
   function loadData() {
     try {
@@ -83,6 +105,7 @@
   const trackerWrap = document.getElementById('trackerWrap');
   const trackerInner = document.getElementById('trackerInner');
   const monthLabel = document.getElementById('monthLabel');
+  const stretchChipValueEl = document.getElementById('stretchChipValue');
 
   monthLabel.textContent = year + '年' + month + '月';
 
@@ -113,7 +136,46 @@
     overlay.appendChild(mask);
   }
 
-  // 8項目 × 31日ぶんの透明タップボタンを生成
+  /* =====================================================================
+     今月のまとめ：動的カウント表示
+     ===================================================================== */
+
+  const summaryEls = {};
+  SUMMARY_SPOTS.forEach(function (spot) {
+    const el = document.createElement('div');
+    el.className = 'summary-value';
+    setBox(el, spot.left, spot.top, spot.width, spot.height);
+    overlay.appendChild(el);
+    summaryEls[spot.key] = el;
+  });
+
+  function recalcSummary() {
+    const ids = ['pilates', 'cardio', 'strength', 'stretch'];
+    const counts = { pilates: 0, cardio: 0, strength: 0, stretch: 0 };
+    let exerciseDays = 0;
+
+    for (let day = 1; day <= daysInMonth; day++) {
+      let any = false;
+      ids.forEach(function (id) {
+        if (data[id + '_' + day]) {
+          counts[id]++;
+          any = true;
+        }
+      });
+      if (any) exerciseDays++;
+    }
+
+    summaryEls.exerciseDays.textContent = exerciseDays;
+    summaryEls.pilates.textContent = counts.pilates;
+    summaryEls.cardio.textContent = counts.cardio;
+    summaryEls.strength.textContent = counts.strength;
+    stretchChipValueEl.textContent = counts.stretch;
+  }
+
+  /* =====================================================================
+     運動・生活習慣：8項目 × 31日ぶんの✓タップボタン
+     ===================================================================== */
+
   ROWS.forEach(function (row, ri) {
     const top = ROW_PCT[ri];
     const bottom = ROW_PCT[ri + 1];
@@ -153,6 +215,7 @@
             delete data[key];
           }
           saveData(data);
+          recalcSummary();
         });
       }
 
@@ -160,10 +223,15 @@
     }
   });
 
-  // 体調・メンタル4項目 × 31日ぶんの透明タップボタンを生成（タップで1〜10選択モーダルを開く）
+  /* =====================================================================
+     体調・メンタル：4項目 × 31日ぶんの1〜10選択ボタン
+     （金曜日の疲労度は金曜日のみ有効）
+     ===================================================================== */
+
   ROWS2.forEach(function (row, ri) {
     const top = ROW2_PCT[ri];
     const bottom = ROW2_PCT[ri + 1];
+    const fridayOnly = row.id === 'friFatigue';
 
     for (let day = 1; day <= 31; day++) {
       const left = COL_PCT[day - 1];
@@ -184,8 +252,15 @@
       stamp.setAttribute('aria-hidden', 'true');
       btn.appendChild(stamp);
 
-      if (day > daysInMonth) {
+      const withinMonth = day <= daysInMonth;
+      const allowedDay = !fridayOnly || isFriday(year, month, day);
+
+      if (!withinMonth || !allowedDay) {
         btn.disabled = true;
+        if (withinMonth && !allowedDay) {
+          btn.classList.add('non-friday');
+          btn.setAttribute('aria-label', month + '月' + day + '日 ' + row.label + '（金曜日のみ入力可）');
+        }
       } else {
         if (data[key]) {
           btn.classList.add('checked');
@@ -210,7 +285,6 @@
   const numberClear = document.getElementById('numberClear');
   const numberClose = document.getElementById('numberClose');
 
-  // 1〜10のボタンをあらかじめ作っておく
   for (let n = 1; n <= 10; n++) {
     const nBtn = document.createElement('button');
     nBtn.type = 'button';
@@ -232,12 +306,10 @@
     });
     numberModalBackdrop.classList.add('show');
   }
-
   function closeNumberModal() {
     numberModalBackdrop.classList.remove('show');
     activeNumberBtn = null;
   }
-
   function applyNumberToCell(value) {
     if (!activeNumberBtn) return;
     const key = activeNumberBtn.dataset.key;
@@ -270,8 +342,169 @@
   });
 
   /* =====================================================================
-     今日の列が見えるように、横スクロール位置を自動調整
+     テキスト入力モーダル（ふりかえり／自分へのひとこと 共通）
      ===================================================================== */
+
+  const textModalBackdrop = document.getElementById('textModalBackdrop');
+  const textModalTitle = document.getElementById('textModalTitle');
+  const textModalInput = document.getElementById('textModalInput');
+  const textModalArea = document.getElementById('textModalArea');
+  const textModalClear = document.getElementById('textModalClear');
+  const textModalSave = document.getElementById('textModalSave');
+
+  let textModalCtx = null;
+
+  function openTextModal(ctx) {
+    textModalCtx = ctx;
+    textModalTitle.textContent = ctx.title;
+    if (ctx.mode === 'paragraph') {
+      textModalArea.style.display = 'block';
+      textModalInput.style.display = 'none';
+      textModalArea.value = ctx.value;
+    } else {
+      textModalInput.style.display = 'block';
+      textModalArea.style.display = 'none';
+      textModalInput.value = ctx.value;
+    }
+    textModalBackdrop.classList.add('show');
+    setTimeout(function () {
+      (ctx.mode === 'paragraph' ? textModalArea : textModalInput).focus();
+    }, 60);
+  }
+  function closeTextModal() {
+    textModalBackdrop.classList.remove('show');
+    textModalCtx = null;
+  }
+  textModalSave.addEventListener('click', function () {
+    if (!textModalCtx) return;
+    const field = textModalCtx.mode === 'paragraph' ? textModalArea : textModalInput;
+    textModalCtx.onSave(field.value.trim());
+    closeTextModal();
+  });
+  textModalClear.addEventListener('click', function () {
+    if (!textModalCtx) return;
+    textModalCtx.onSave('');
+    closeTextModal();
+  });
+  textModalBackdrop.addEventListener('click', function (e) {
+    if (e.target === textModalBackdrop) closeTextModal();
+  });
+
+  /* =====================================================================
+     今月のふりかえり：一言メモ（タップでテキスト入力）
+     ===================================================================== */
+
+  const reflectPreviews = [];
+
+  function updateReflectPreview(el, value) {
+    if (value) {
+      el.textContent = value;
+      el.classList.remove('placeholder');
+    } else {
+      el.textContent = 'タップで入力';
+      el.classList.add('placeholder');
+    }
+  }
+
+  REFLECT_FIELDS.forEach(function (field) {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'reflect-btn';
+    btn.setAttribute('aria-label', field.label + 'の一言メモ');
+    setBox(btn, field.left, field.top, field.width, field.height);
+
+    const preview = document.createElement('span');
+    preview.className = 'preview';
+    updateReflectPreview(preview, data[field.key]);
+    btn.appendChild(preview);
+    reflectPreviews.push({ field: field, el: preview });
+
+    btn.addEventListener('click', function () {
+      openTextModal({
+        title: field.label,
+        mode: 'line',
+        value: data[field.key] || '',
+        onSave: function (v) {
+          if (v) {
+            data[field.key] = v;
+          } else {
+            delete data[field.key];
+          }
+          saveData(data);
+          updateReflectPreview(preview, data[field.key]);
+        }
+      });
+    });
+
+    overlay.appendChild(btn);
+  });
+
+  /* =====================================================================
+     自分へのひとこと（タップで段落テキスト入力）
+     ===================================================================== */
+
+  const selfNoteBtn = document.createElement('button');
+  selfNoteBtn.type = 'button';
+  selfNoteBtn.className = 'selfnote-btn';
+  selfNoteBtn.setAttribute('aria-label', '自分へのひとこと');
+  setBox(selfNoteBtn, SELF_NOTE_BOX.left, SELF_NOTE_BOX.top, SELF_NOTE_BOX.width, SELF_NOTE_BOX.height);
+
+  const selfNotePreview = document.createElement('span');
+  selfNotePreview.className = 'preview';
+
+  function updateSelfNotePreview() {
+    if (data.selfNote) {
+      selfNotePreview.textContent = data.selfNote;
+      selfNotePreview.classList.remove('placeholder');
+    } else {
+      selfNotePreview.textContent = 'タップして今月の自分にひとこと';
+      selfNotePreview.classList.add('placeholder');
+    }
+  }
+  updateSelfNotePreview();
+  selfNoteBtn.appendChild(selfNotePreview);
+
+  selfNoteBtn.addEventListener('click', function () {
+    openTextModal({
+      title: '自分へのひとこと',
+      mode: 'paragraph',
+      value: data.selfNote || '',
+      onSave: function (v) {
+        if (v) {
+          data.selfNote = v;
+        } else {
+          delete data.selfNote;
+        }
+        saveData(data);
+        updateSelfNotePreview();
+      }
+    });
+  });
+  overlay.appendChild(selfNoteBtn);
+
+  // 初期表示時点の集計を反映
+  recalcSummary();
+
+  /* =====================================================================
+     ピンチズーム（最小＝画面に全体がおさまるサイズ、最大＝拡大表示）
+     ===================================================================== */
+
+  const MAX_WIDTH = 2400;
+  const DEFAULT_WIDTH = 1800;
+  const COMPACT_THRESHOLD = 900;
+
+  function minWidth() {
+    return trackerWrap.clientWidth;
+  }
+
+  function setTrackerWidth(px) {
+    const w = Math.max(minWidth(), Math.min(MAX_WIDTH, px));
+    trackerInner.style.width = w + 'px';
+    trackerInner.classList.toggle('compact', w < COMPACT_THRESHOLD);
+    return w;
+  }
+
+  setTrackerWidth(DEFAULT_WIDTH);
 
   function scrollToToday() {
     if (today < 1 || today > 31) return;
@@ -285,25 +518,47 @@
   requestAnimationFrame(scrollToToday);
   window.addEventListener('load', scrollToToday);
 
-  /* =====================================================================
-     全体表示／拡大表示 切り替え
-     タップしやすい拡大表示を初期状態にしつつ、ボタンひとつで
-     画面幅にフィットした全体表示に切り替えられるようにする。
-     ===================================================================== */
+  function touchDistance(t1, t2) {
+    const dx = t1.clientX - t2.clientX;
+    const dy = t1.clientY - t2.clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
 
-  const zoomToggleBtn = document.getElementById('zoomToggleBtn');
-  let isOverview = false;
+  let pinch = null;
 
-  zoomToggleBtn.addEventListener('click', function () {
-    isOverview = !isOverview;
-    trackerInner.style.setProperty('--zoom-min-width', isOverview ? '0px' : '1800px');
-    zoomToggleBtn.textContent = isOverview ? '🔍 拡大表示' : '⤢ 全体表示';
-    zoomToggleBtn.setAttribute('aria-pressed', isOverview ? 'true' : 'false');
-    if (isOverview) {
-      trackerWrap.scrollLeft = 0;
-    } else {
-      requestAnimationFrame(scrollToToday);
+  trackerWrap.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      const wrapRect = trackerWrap.getBoundingClientRect();
+      pinch = {
+        startDist: touchDistance(e.touches[0], e.touches[1]),
+        startWidth: trackerInner.getBoundingClientRect().width,
+        startScrollLeft: trackerWrap.scrollLeft,
+        midX: ((e.touches[0].clientX + e.touches[1].clientX) / 2) - wrapRect.left
+      };
     }
+  }, { passive: true });
+
+  trackerWrap.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && pinch) {
+      e.preventDefault();
+      const dist = touchDistance(e.touches[0], e.touches[1]);
+      const ratio = dist / pinch.startDist;
+      const contentX = pinch.startScrollLeft + pinch.midX;
+      const contentRatio = contentX / pinch.startWidth;
+      const newWidth = setTrackerWidth(pinch.startWidth * ratio);
+      trackerWrap.scrollLeft = Math.max(0, contentRatio * newWidth - pinch.midX);
+    }
+  }, { passive: false });
+
+  trackerWrap.addEventListener('touchend', function (e) {
+    if (e.touches.length < 2) pinch = null;
+  });
+  trackerWrap.addEventListener('touchcancel', function () {
+    pinch = null;
+  });
+
+  window.addEventListener('resize', function () {
+    setTrackerWidth(trackerInner.getBoundingClientRect().width);
   });
 
   /* =====================================================================
@@ -327,12 +582,20 @@
   modalConfirm.addEventListener('click', function () {
     data = {};
     saveData(data);
+
     document.querySelectorAll('.cell-btn.checked').forEach(function (b) {
       b.classList.remove('checked');
       if (b.hasAttribute('aria-pressed')) b.setAttribute('aria-pressed', 'false');
       const stamp = b.querySelector('.stamp.num');
       if (stamp) stamp.textContent = '';
     });
+
+    reflectPreviews.forEach(function (item) {
+      updateReflectPreview(item.el, '');
+    });
+    updateSelfNotePreview();
+
+    recalcSummary();
     modalBackdrop.classList.remove('show');
   });
 

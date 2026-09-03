@@ -21,6 +21,7 @@ html,body{
   background: var(--bg);
   color: var(--ink);
   font-family: "Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+  overscroll-behavior-y: contain;
 }
 
 /* ---------- top bar ---------- */
@@ -69,12 +70,13 @@ html,body{
 
 .hint{
   margin: 10px 16px 4px;
-  font-size: 12.5px;
+  font-size: 12px;
   color: var(--sub);
   text-align: center;
+  line-height: 1.5;
 }
 
-main{ padding: 6px 0 48px; }
+main{ padding: 6px 0 40px; }
 
 /* ---------- tracker image + overlay ---------- */
 .tracker-wrap{
@@ -85,9 +87,9 @@ main{ padding: 6px 0 48px; }
 }
 .tracker-inner{
   position: relative;
-  width: max(var(--zoom-min-width, 1800px), 100%);   /* 十分なタップ領域を確保するための最小幅 */
+  width: 1800px;                 /* JSがピンチ操作でこの値を書き換える */
   margin: 0 auto;
-  transition: width .22s ease;
+  container-type: inline-size;   /* cqw単位でズームに追従させるため */
 }
 .tracker-img{
   display:block;
@@ -100,6 +102,7 @@ main{ padding: 6px 0 48px; }
 .overlay{
   position: absolute;
   inset: 0;
+  touch-action: pan-x pan-y;     /* 1本指のスクロールは許可、ピンチはJSで処理 */
 }
 
 .today-col{
@@ -114,7 +117,7 @@ main{ padding: 6px 0 48px; }
   pointer-events: none;
 }
 
-/* ---------- tap buttons ---------- */
+/* ---------- 日付×項目 タップボタン ---------- */
 .cell-btn{
   position: absolute;
   margin: 0;
@@ -130,24 +133,30 @@ main{ padding: 6px 0 48px; }
   touch-action: manipulation;
 }
 .cell-btn:disabled{ pointer-events: none; }
+.cell-btn.non-friday{
+  background: var(--oob-wash);
+}
 
 .cell-btn .stamp{
   width: 68%;
-  max-width: 34px;
+  max-width: 17px;
+  min-width: 0;
+  min-height: 0;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
   background: var(--pink);
   color: #fff;
+  overflow: hidden;
   display:flex;
   align-items:center;
   justify-content:center;
-  font-size: 16px;
+  font-size: clamp(4px, 0.55cqw, 9px);
   line-height: 1;
   font-weight: 700;
   opacity: 0;
   transform: scale(0.4);
-  transition: opacity .12s ease, transform .15s cubic-bezier(.34,1.6,.64,1);
-  box-shadow: 0 1px 3px rgba(0,0,0,.18);
+  transition: opacity .1s ease, transform .12s cubic-bezier(.34,1.6,.64,1);
+  box-shadow: 0 1px 2px rgba(0,0,0,.18);
 }
 .cell-btn.checked .stamp{
   opacity: 1;
@@ -155,29 +164,105 @@ main{ padding: 6px 0 48px; }
 }
 .cell-btn .stamp.num{
   background: var(--cond);
-  font-size: 14px;
 }
 
-/* ---------- 全体表示／拡大表示 切り替えボタン ---------- */
-.zoom-toggle{
-  position: fixed;
-  right: 16px;
-  bottom: 20px;
-  z-index: 15;
-  padding: 10px 16px;
+/* 画面をかなり縮小したとき：丸を消して枠内に色をつける（潰れて楕円になるのを防ぐ） */
+.tracker-inner.compact .stamp{
+  display: none;
+}
+.tracker-inner.compact .cell-btn.checked{
+  background: rgba(246,169,177,0.55);
+  border-radius: 2px;
+}
+.tracker-inner.compact .cell-btn.checked:has(.stamp.num){
+  background: rgba(138,174,143,0.55);
+}
+
+/* ---------- 今月のまとめ：日数の動的表示 ---------- */
+.summary-value{
+  position: absolute;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: var(--ink);
+  font-weight: 700;
+  font-size: clamp(8px, 1.3cqw, 22px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+/* ---------- 今月のふりかえり：一言メモの入力ボタン ---------- */
+.reflect-btn{
+  position: absolute;
+  border: none;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.001); /* タップ判定用（実質透明） */
+  display:flex;
+  align-items:center;
+  padding: 0 3cqw;
+  cursor: pointer;
+}
+.reflect-btn:active{ background: rgba(180,150,210,0.12); }
+.reflect-btn .preview{
+  font-size: clamp(8px, 1.15cqw, 18px);
+  color: var(--ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
+  text-align: left;
+}
+.reflect-btn .preview.placeholder{
+  color: #c2b6a5;
+}
+
+/* ---------- 自分へのひとこと：入力ボタン ---------- */
+.selfnote-btn{
+  position: absolute;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.001);
+  padding: 2cqw;
+  cursor: pointer;
+  text-align: left;
+}
+.selfnote-btn:active{ background: rgba(228,129,141,0.08); }
+.selfnote-btn .preview{
+  font-size: clamp(8px, 1.15cqw, 18px);
+  color: var(--ink);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.selfnote-btn .preview.placeholder{
+  color: #c2b6a5;
+}
+
+/* ---------- ストレッチ・ほぐし 追加集計チップ ---------- */
+.extra-chip{
+  max-width: 340px;
+  margin: 10px auto 0;
+  padding: 9px 16px;
   border-radius: 999px;
   border: 1px solid var(--accent-strong);
-  background: rgba(255,255,255,0.94);
-  color: #8a6a3f;
+  background: #fffaf0;
+  display:flex;
+  align-items:baseline;
+  justify-content:center;
+  gap: 6px;
   font-size: 13px;
-  white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0,0,0,.18);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
+  color: var(--ink);
 }
-.zoom-toggle:active{ background: var(--accent); }
+.extra-chip-value{
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--cond-deep);
+}
+.extra-chip-unit{ font-size: 12px; color: var(--sub); }
 
-/* ---------- reset confirm modal ---------- */
+/* ---------- モーダル共通 ---------- */
 .modal-backdrop{
   position: fixed;
   inset: 0;
@@ -208,7 +293,7 @@ main{ padding: 6px 0 48px; }
   font-size: 12px;
   color: var(--sub);
 }
-.modal-actions{ display:flex; gap:10px; }
+.modal-actions{ display:flex; gap:10px; margin-top: 4px; }
 .modal-btn{
   flex:1;
   padding: 11px 0;
@@ -219,7 +304,7 @@ main{ padding: 6px 0 48px; }
 .modal-btn.cancel{ background:#f1ece2; color: var(--ink); }
 .modal-btn.confirm{ background: var(--pink-deep); color:#fff; font-weight:700; }
 
-/* ---------- 1〜10 数値選択モーダル ---------- */
+/* 1〜10 数値選択 */
 .number-grid{
   display: grid;
   grid-template-columns: repeat(5, 1fr);
@@ -241,3 +326,19 @@ main{ padding: 6px 0 48px; }
   border-color: transparent;
   color: #fff;
 }
+
+/* テキスト入力 */
+.text-input-field,
+.text-input-area{
+  display: none;
+  width: 100%;
+  margin: 4px 0 16px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: #faf6ee;
+  color: var(--ink);
+  font-size: 16px;
+  font-family: inherit;
+}
+.text-input-area{ resize: vertical; }
