@@ -1,13 +1,13 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ja">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Habit Tracker</title>
+<title>ハビットトラッカー</title>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=M+PLUS+Rounded+1c:wght@500;600;700;800&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 </head>
@@ -34,14 +34,62 @@
 <div class="page">
 
   <header class="hero">
-    <h1 class="title">Habit Tracker</h1>
+    <h1 class="title">ハビットトラッカー</h1>
     <div class="badge-row" id="badgeRow"></div>
+    <div class="date-row" id="dateRow"></div>
+    <button type="button" id="resetBtn" class="reset-btn">↺ 今月をリセット</button>
   </header>
 
-  <div class="date-row" id="dateRow"></div>
+  <section class="card theme-blue" id="goalsCard">
+    <h2 class="card-title">今月の目標</h2>
+    <div id="goalsList" class="goals-list"></div>
+  </section>
 
-  <div class="cards-grid" id="cardsGrid"></div>
+  <section class="card theme-pink" id="gridCard">
+    <h2 class="card-title">習慣トラッカー</h2>
+    <p class="card-hint">運動・生活習慣はタップで✓、体調・メンタルはタップで1〜10を選択</p>
+    <div class="table-wrap" id="tableWrap"></div>
+  </section>
 
+  <section class="card theme-pink" id="reflectCard">
+    <h2 class="card-title">今月のふりかえり</h2>
+    <div id="reflectList" class="reflect-list"></div>
+  </section>
+
+  <section class="card theme-blue" id="summaryCard">
+    <h2 class="card-title">今月のまとめ</h2>
+    <div id="summaryList" class="summary-list"></div>
+  </section>
+
+  <section class="card theme-pink" id="noteCard">
+    <h2 class="card-title">自分へのひとこと</h2>
+    <textarea id="selfNoteArea" class="note-area" rows="5" maxlength="400" placeholder="今月の自分にひとこと"></textarea>
+  </section>
+
+</div>
+
+<!-- リセット確認ダイアログ -->
+<div class="modal-backdrop" id="resetModalBackdrop">
+  <div class="modal-box">
+    <p class="modal-title">今月の記録をリセットしますか？</p>
+    <p class="modal-sub">この操作は取り消せません。</p>
+    <div class="modal-actions">
+      <button type="button" id="resetCancel" class="modal-btn cancel">キャンセル</button>
+      <button type="button" id="resetConfirm" class="modal-btn confirm">リセットする</button>
+    </div>
+  </div>
+</div>
+
+<!-- 1〜10 数値選択ダイアログ -->
+<div class="modal-backdrop" id="numberModalBackdrop">
+  <div class="modal-box">
+    <p class="modal-title" id="numberModalTitle">–</p>
+    <div class="number-grid" id="numberGrid"></div>
+    <div class="modal-actions">
+      <button type="button" id="numberClear" class="modal-btn cancel">クリア</button>
+      <button type="button" id="numberClose" class="modal-btn cancel">閉じる</button>
+    </div>
+  </div>
 </div>
 
 <script src="app.js"></script>

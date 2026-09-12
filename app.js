@@ -2,26 +2,35 @@
   'use strict';
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
-  const STORAGE_KEY = 'habitTrackerCards';
-
-  const CARDS = [
-    { theme: 'pink', rows: 5 },
-    { theme: 'blue', rows: 5 },
-    { theme: 'blue', rows: 6 },
-    { theme: 'pink', rows: 6 }
-  ];
-  const COLS = 6;
+  const WEEKDAY_JP = ['日', '月', '火', '水', '木', '金', '土'];
 
   /* =====================================================================
-     保存データ
+     日付・保存キー
      ===================================================================== */
+
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() + 1;
+  const today = now.getDate();
+  const daysInMonth = new Date(year, month, 0).getDate();
+  const STORAGE_KEY = 'habitTrackerFull:' + year + '-' + String(month).padStart(2, '0');
+
+  function isFriday(y, m, d) {
+    return new Date(y, m - 1, d).getDay() === 5;
+  }
+
+  const DEFAULT_GOALS = [
+    '疲れにくい体にしたい（体力をつけたい）',
+    '身体を引き締めたい',
+    'ストレス解消・将来の健康維持'
+  ];
 
   function loadData() {
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      return raw ? JSON.parse(raw) : {};
+      return raw ? JSON.parse(raw) : null;
     } catch (e) {
-      return {};
+      return null;
     }
   }
   function saveData() {
@@ -32,13 +41,19 @@
     }
   }
 
-  const data = Object.assign(
-    { month: '', year: '', habits: ['', '', '', ''], checks: [{}, {}, {}, {}] },
-    loadData()
-  );
+  const loaded = loadData();
+  const data = loaded || {
+    goals: DEFAULT_GOALS.slice(),
+    checks: {},
+    reflectGood: '',
+    reflectEffort: '',
+    reflectNext: '',
+    selfNote: ''
+  };
+  if (!data.goals || data.goals.length !== 3) data.goals = DEFAULT_GOALS.slice();
 
   /* =====================================================================
-     SVGパーツ
+     SVGパーツ（手描き風フレーム・星・チェックマーク）
      ===================================================================== */
 
   function svgEl(tag, attrs) {
@@ -47,7 +62,6 @@
     return el;
   }
 
-  // 手描き風にゆがんだ角丸長方形の枠線
   function wobbleFrame(color, filterId, viewW, viewH, strokeW) {
     const svg = svgEl('svg', {
       class: 'frame-svg',
@@ -55,40 +69,17 @@
       preserveAspectRatio: 'none'
     });
     const pad = strokeW * 1.4;
-    const rect = svgEl('rect', {
+    svg.appendChild(svgEl('rect', {
       x: pad, y: pad,
       width: viewW - pad * 2,
       height: viewH - pad * 2,
-      rx: Math.min(viewW, viewH) * 0.1,
+      rx: Math.min(viewW, viewH) * 0.08,
       fill: 'none',
       stroke: color,
       'stroke-width': strokeW,
       'vector-effect': 'non-scaling-stroke',
       filter: 'url(#' + filterId + ')'
-    });
-    svg.appendChild(rect);
-    return svg;
-  }
-
-  // 四方に線が伸びるきらめき（スパークル）アクセント
-  function sparkle(color, rotation) {
-    const svg = svgEl('svg', { class: 'sparkle', viewBox: '0 0 40 40' });
-    const g = svgEl('g', {
-      stroke: color,
-      'stroke-width': 4.2,
-      'stroke-linecap': 'round',
-      filter: 'url(#wobble2)',
-      transform: 'rotate(' + rotation + ' 20 20)'
-    });
-    [
-      [20, 5, 20, 35],
-      [5, 20, 35, 20],
-      [10, 10, 30, 30],
-      [30, 10, 10, 30]
-    ].forEach(function (p) {
-      g.appendChild(svgEl('line', { x1: p[0], y1: p[1], x2: p[2], y2: p[3] }));
-    });
-    svg.appendChild(g);
+    }));
     return svg;
   }
 
@@ -109,143 +100,407 @@
     const svg = svgEl('svg', { class: 'mark', viewBox: '0 0 24 24' });
     svg.appendChild(svgEl('path', {
       d: 'M4 12.5 L9.5 18 L20 6',
-      fill: 'none',
-      stroke: 'currentColor',
-      'stroke-width': 3.2,
-      'stroke-linecap': 'round',
-      'stroke-linejoin': 'round'
+      fill: 'none', stroke: 'currentColor',
+      'stroke-width': 3.2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round'
     }));
     return svg;
   }
 
+  // すべての .card / .date-badge に手描き風フレームを重ねる
+  function applyFrames() {
+    document.querySelectorAll('.card').forEach(function (card, i) {
+      const color = card.classList.contains('theme-pink') ? 'var(--pink)' : 'var(--blue)';
+      card.prepend(wobbleFrame(color, 'wobble' + ((i % 3) + 1), 500, 300, 6));
+    });
+    document.querySelectorAll('.date-badge').forEach(function (badge, i) {
+      badge.prepend(wobbleFrame('var(--blue)', 'wobble' + ((i % 3) + 1), 300, 100, 4));
+    });
+  }
+
   /* =====================================================================
-     見出しバッジ（星 ＋ ピル）
+     ヘッダー：星＋ピル／月・年バッジ
      ===================================================================== */
 
   const badgeRow = document.getElementById('badgeRow');
   badgeRow.appendChild(starIcon());
   const pill = document.createElement('div');
   pill.className = 'pill';
-  pill.textContent = 'On my way to meet the new version of me';
+  pill.textContent = 'なりたい自分になるために';
   badgeRow.appendChild(pill);
   badgeRow.appendChild(starIcon());
 
+  const dateRow = document.getElementById('dateRow');
+  [['月', month + '月'], ['年', year + '年']].forEach(function (pair) {
+    const badge = document.createElement('div');
+    badge.className = 'date-badge';
+    const span = document.createElement('span');
+    span.textContent = pair[0] + '：' + pair[1];
+    badge.appendChild(span);
+    dateRow.appendChild(badge);
+  });
+
   /* =====================================================================
-     Month / Year
+     今月の目標
      ===================================================================== */
 
-  const dateRow = document.getElementById('dateRow');
-
-  function buildDateBox(labelText, key, placeholder) {
-    const box = document.createElement('div');
-    box.className = 'date-box';
-    box.appendChild(wobbleFrame('var(--blue)', 'wobble1', 400, 100, 5));
-
-    const inner = document.createElement('div');
-    inner.className = 'date-inner';
-
-    const label = document.createElement('span');
-    label.className = 'date-label';
-    label.textContent = labelText;
-    inner.appendChild(label);
-
+  const goalsList = document.getElementById('goalsList');
+  data.goals.forEach(function (val, i) {
+    const row = document.createElement('div');
+    row.className = 'goal-row';
+    const num = document.createElement('span');
+    num.className = 'goal-num';
+    num.textContent = (i + 1) + '.';
     const input = document.createElement('input');
     input.type = 'text';
-    input.className = 'date-input';
-    input.placeholder = placeholder;
-    input.value = data[key];
+    input.className = 'goal-input';
+    input.maxLength = 60;
+    input.value = val;
     input.addEventListener('input', function () {
-      data[key] = input.value;
+      data.goals[i] = input.value;
       saveData();
     });
-    inner.appendChild(input);
-
-    box.appendChild(inner);
-    return box;
-  }
-
-  dateRow.appendChild(buildDateBox('Month:', 'month', 'e.g. September'));
-  dateRow.appendChild(buildDateBox('Year:', 'year', 'e.g. 2026'));
+    row.appendChild(num);
+    row.appendChild(input);
+    goalsList.appendChild(row);
+  });
 
   /* =====================================================================
-     4つのハビットカード
+     習慣トラッカー：テーブル生成
      ===================================================================== */
 
-  const cardsGrid = document.getElementById('cardsGrid');
+  const GROUPS = [
+    {
+      cls: 'group-ex', title: '運動', type: 'check',
+      rows: [
+        { id: 'pilates', label: 'ピラティス' },
+        { id: 'cardio', label: '有酸素運動' },
+        { id: 'strength', label: '筋トレ' },
+        { id: 'stretch', label: 'ストレッチ・ほぐし' }
+      ]
+    },
+    {
+      cls: 'group-life', title: '生活習慣', type: 'check',
+      rows: [
+        { id: 'sleep', label: '7時間以上の睡眠' },
+        { id: 'meal', label: 'バランスのよい食事' },
+        { id: 'water', label: '水を1.5L以上飲む' },
+        { id: 'bath', label: '湯船・リラックス' }
+      ]
+    },
+    {
+      cls: 'group-cond', title: '体調・メンタル', type: 'number',
+      rows: [
+        { id: 'fatigue', label: '疲労度' },
+        { id: 'mood', label: '気分' },
+        { id: 'soreness', label: '首・肩・腰のこり' },
+        { id: 'friFatigue', label: '金曜日の疲労度', fridayOnly: true }
+      ]
+    }
+  ];
 
-  CARDS.forEach(function (cardDef, cardIndex) {
-    const frameColor = cardDef.theme === 'pink' ? 'var(--pink)' : 'var(--blue)';
-    const accentColorA = cardDef.theme === 'pink' ? 'var(--pink)' : 'var(--blue)';
-    const accentColorB = cardDef.theme === 'pink' ? 'var(--blue)' : 'var(--pink)';
+  const tableWrap = document.getElementById('tableWrap');
+  const table = document.createElement('table');
+  table.className = 'tracker-table';
 
-    const card = document.createElement('div');
-    card.className = 'tracker-card theme-' + cardDef.theme;
+  const thead = document.createElement('thead');
+  const rowNum = document.createElement('tr');
+  const rowWd = document.createElement('tr');
+  const cornerNum = document.createElement('th');
+  const cornerWd = document.createElement('th');
+  cornerNum.className = 'row-label';
+  cornerWd.className = 'row-label';
+  rowNum.appendChild(cornerNum);
+  rowWd.appendChild(cornerWd);
 
-    card.appendChild(wobbleFrame(frameColor, 'wobble' + ((cardIndex % 3) + 1), 400, 500, 6));
+  for (let day = 1; day <= daysInMonth; day++) {
+    const wd = new Date(year, month - 1, day).getDay();
+    const isToday = day === today;
 
-    // 対角2か所にスパークルの飾り
-    const s1 = sparkle(accentColorA, cardIndex % 2 === 0 ? -12 : 10);
-    s1.style.top = '-14px';
-    s1.style.right = '-10px';
-    card.appendChild(s1);
+    const thN = document.createElement('th');
+    thN.textContent = day;
+    if (isToday) thN.classList.add('today-col');
 
-    const s2 = sparkle(accentColorB, cardIndex % 2 === 0 ? 14 : -8);
-    s2.style.bottom = '4px';
-    s2.style.left = '-16px';
-    card.appendChild(s2);
+    const thW = document.createElement('th');
+    thW.textContent = WEEKDAY_JP[wd];
+    thW.classList.add('wd');
+    if (isToday) thW.classList.add('today-col');
 
-    const head = document.createElement('div');
-    head.className = 'habit-head';
-    const label = document.createElement('span');
-    label.className = 'habit-label';
-    label.textContent = 'Habit:';
-    head.appendChild(label);
+    rowNum.appendChild(thN);
+    rowWd.appendChild(thW);
+  }
+  thead.appendChild(rowNum);
+  thead.appendChild(rowWd);
+  table.appendChild(thead);
 
-    const nameInput = document.createElement('input');
-    nameInput.type = 'text';
-    nameInput.className = 'habit-name-input';
-    nameInput.placeholder = 'Name your habit';
-    nameInput.maxLength = 40;
-    nameInput.value = data.habits[cardIndex];
-    nameInput.addEventListener('input', function () {
-      data.habits[cardIndex] = nameInput.value;
+  const tbody = document.createElement('tbody');
+  let numberModalOpener = null; // 後で定義する openNumberModal をここにセットする
+
+  GROUPS.forEach(function (group) {
+    const headTr = document.createElement('tr');
+    headTr.className = 'group-head ' + group.cls;
+    const headTd = document.createElement('td');
+    headTd.textContent = group.title;
+    headTd.colSpan = 1;
+    headTr.appendChild(headTd);
+    for (let day = 1; day <= daysInMonth; day++) {
+      const filler = document.createElement('td');
+      headTr.appendChild(filler);
+    }
+    tbody.appendChild(headTr);
+
+    group.rows.forEach(function (row) {
+      const tr = document.createElement('tr');
+      tr.className = group.cls;
+
+      const th = document.createElement('th');
+      th.className = 'row-label';
+      th.textContent = row.label;
+      tr.appendChild(th);
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const td = document.createElement('td');
+        td.className = 'day-cell';
+        if (day === today) td.classList.add('today-col');
+
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'cell-btn' + (group.type === 'number' ? ' num' : '');
+        const key = row.id + '_' + day;
+        btn.dataset.key = key;
+        btn.dataset.label = row.label;
+        btn.dataset.day = day;
+
+        if (group.type === 'check') {
+          btn.setAttribute('aria-label', month + '月' + day + '日 ' + row.label);
+          const mark = checkMark();
+          btn.appendChild(mark);
+          if (data.checks[key]) btn.classList.add('checked');
+          btn.addEventListener('click', function () {
+            const checked = btn.classList.toggle('checked');
+            if (checked) data.checks[key] = true; else delete data.checks[key];
+            saveData();
+            recalcSummary();
+          });
+        } else {
+          const fridayOnly = !!row.fridayOnly;
+          const allowed = !fridayOnly || isFriday(year, month, day);
+          if (!allowed) {
+            btn.disabled = true;
+            btn.classList.add('non-friday');
+          } else {
+            if (data.checks[key]) {
+              btn.classList.add('checked');
+              btn.textContent = data.checks[key];
+            }
+            btn.addEventListener('click', function () {
+              if (numberModalOpener) numberModalOpener(btn);
+            });
+          }
+        }
+
+        td.appendChild(btn);
+        tr.appendChild(td);
+      }
+      tbody.appendChild(tr);
+    });
+  });
+
+  table.appendChild(tbody);
+  tableWrap.appendChild(table);
+
+  /* =====================================================================
+     1〜10 数値選択モーダル
+     ===================================================================== */
+
+  const numberModalBackdrop = document.getElementById('numberModalBackdrop');
+  const numberModalTitle = document.getElementById('numberModalTitle');
+  const numberGrid = document.getElementById('numberGrid');
+  const numberClear = document.getElementById('numberClear');
+  const numberClose = document.getElementById('numberClose');
+
+  for (let n = 1; n <= 10; n++) {
+    const nBtn = document.createElement('button');
+    nBtn.type = 'button';
+    nBtn.textContent = String(n);
+    nBtn.dataset.value = n;
+    numberGrid.appendChild(nBtn);
+  }
+
+  let activeNumberBtn = null;
+
+  function openNumberModal(cellBtn) {
+    activeNumberBtn = cellBtn;
+    const key = cellBtn.dataset.key;
+    const current = data.checks[key] || null;
+    numberModalTitle.textContent = month + '月' + cellBtn.dataset.day + '日　' + cellBtn.dataset.label;
+    numberGrid.querySelectorAll('button').forEach(function (nBtn) {
+      nBtn.classList.toggle('selected', String(current) === nBtn.dataset.value);
+    });
+    numberModalBackdrop.classList.add('show');
+  }
+  numberModalOpener = openNumberModal;
+
+  function closeNumberModal() {
+    numberModalBackdrop.classList.remove('show');
+    activeNumberBtn = null;
+  }
+  function applyNumberToCell(value) {
+    if (!activeNumberBtn) return;
+    const key = activeNumberBtn.dataset.key;
+    if (value === null) {
+      delete data.checks[key];
+      activeNumberBtn.classList.remove('checked');
+      activeNumberBtn.textContent = '';
+    } else {
+      data.checks[key] = value;
+      activeNumberBtn.classList.add('checked');
+      activeNumberBtn.textContent = String(value);
+    }
+    saveData();
+  }
+  numberGrid.addEventListener('click', function (e) {
+    const nBtn = e.target.closest('button');
+    if (!nBtn) return;
+    applyNumberToCell(Number(nBtn.dataset.value));
+    closeNumberModal();
+  });
+  numberClear.addEventListener('click', function () { applyNumberToCell(null); closeNumberModal(); });
+  numberClose.addEventListener('click', closeNumberModal);
+  numberModalBackdrop.addEventListener('click', function (e) {
+    if (e.target === numberModalBackdrop) closeNumberModal();
+  });
+
+  /* =====================================================================
+     今月のふりかえり
+     ===================================================================== */
+
+  const REFLECT_FIELDS = [
+    { key: 'reflectGood', label: 'よくできたこと' },
+    { key: 'reflectEffort', label: '工夫したこと' },
+    { key: 'reflectNext', label: '来月に活かすこと・改善したいこと' }
+  ];
+  const reflectList = document.getElementById('reflectList');
+  REFLECT_FIELDS.forEach(function (field) {
+    const row = document.createElement('div');
+    row.className = 'reflect-row';
+    const label = document.createElement('label');
+    label.textContent = field.label;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'reflect-input';
+    input.maxLength = 60;
+    input.value = data[field.key] || '';
+    input.addEventListener('input', function () {
+      data[field.key] = input.value;
       saveData();
     });
-    head.appendChild(nameInput);
-    card.appendChild(head);
-
-    const hr = document.createElement('hr');
-    hr.className = 'habit-underline';
-    card.appendChild(hr);
-
-    const grid = document.createElement('div');
-    grid.className = 'habit-grid';
-    const totalCells = COLS * cardDef.rows;
-
-    for (let i = 0; i < totalCells; i++) {
-      const cell = document.createElement('button');
-      cell.type = 'button';
-      cell.className = 'cell';
-      cell.setAttribute('aria-label', 'Day ' + (i + 1));
-      cell.appendChild(checkMark());
-
-      const cellKey = String(i);
-      if (data.checks[cardIndex][cellKey]) {
-        cell.classList.add('checked');
-      }
-      cell.addEventListener('click', function () {
-        const checked = cell.classList.toggle('checked');
-        if (checked) {
-          data.checks[cardIndex][cellKey] = true;
-        } else {
-          delete data.checks[cardIndex][cellKey];
-        }
-        saveData();
-      });
-      grid.appendChild(cell);
-    }
-
-    card.appendChild(grid);
-    cardsGrid.appendChild(card);
+    row.appendChild(label);
+    row.appendChild(input);
+    reflectList.appendChild(row);
   });
+
+  /* =====================================================================
+     今月のまとめ（動的集計）
+     ===================================================================== */
+
+  const SUMMARY_ROWS = [
+    { key: 'exerciseDays', label: '運動した日数', unit: '／' + daysInMonth + '日' },
+    { key: 'pilates', label: 'ピラティス', unit: '回' },
+    { key: 'cardio', label: '有酸素運動', unit: '回' },
+    { key: 'strength', label: '筋トレ', unit: '回' },
+    { key: 'stretch', label: 'ストレッチ・ほぐし', unit: '回' }
+  ];
+  const summaryList = document.getElementById('summaryList');
+  const summaryValueEls = {};
+  SUMMARY_ROWS.forEach(function (row) {
+    const r = document.createElement('div');
+    r.className = 'summary-row';
+    const label = document.createElement('span');
+    label.className = 'label';
+    label.textContent = row.label;
+    const valWrap = document.createElement('span');
+    const val = document.createElement('span');
+    val.className = 'value';
+    val.textContent = '0';
+    const unit = document.createElement('span');
+    unit.className = 'unit';
+    unit.textContent = row.unit;
+    valWrap.appendChild(val);
+    valWrap.appendChild(unit);
+    r.appendChild(label);
+    r.appendChild(valWrap);
+    summaryList.appendChild(r);
+    summaryValueEls[row.key] = val;
+  });
+
+  function recalcSummary() {
+    const ids = ['pilates', 'cardio', 'strength', 'stretch'];
+    const counts = { pilates: 0, cardio: 0, strength: 0, stretch: 0 };
+    let exerciseDays = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      let any = false;
+      ids.forEach(function (id) {
+        if (data.checks[id + '_' + day]) { counts[id]++; any = true; }
+      });
+      if (any) exerciseDays++;
+    }
+    summaryValueEls.exerciseDays.textContent = exerciseDays;
+    summaryValueEls.pilates.textContent = counts.pilates;
+    summaryValueEls.cardio.textContent = counts.cardio;
+    summaryValueEls.strength.textContent = counts.strength;
+    summaryValueEls.stretch.textContent = counts.stretch;
+  }
+  recalcSummary();
+
+  /* =====================================================================
+     自分へのひとこと
+     ===================================================================== */
+
+  const selfNoteArea = document.getElementById('selfNoteArea');
+  selfNoteArea.value = data.selfNote || '';
+  selfNoteArea.addEventListener('input', function () {
+    data.selfNote = selfNoteArea.value;
+    saveData();
+  });
+
+  /* =====================================================================
+     リセット（確認ダイアログ付き）
+     ===================================================================== */
+
+  const resetBtn = document.getElementById('resetBtn');
+  const resetModalBackdrop = document.getElementById('resetModalBackdrop');
+  const resetCancel = document.getElementById('resetCancel');
+  const resetConfirm = document.getElementById('resetConfirm');
+
+  resetBtn.addEventListener('click', function () { resetModalBackdrop.classList.add('show'); });
+  resetCancel.addEventListener('click', function () { resetModalBackdrop.classList.remove('show'); });
+  resetModalBackdrop.addEventListener('click', function (e) {
+    if (e.target === resetModalBackdrop) resetModalBackdrop.classList.remove('show');
+  });
+  resetConfirm.addEventListener('click', function () {
+    data.goals = DEFAULT_GOALS.slice();
+    data.checks = {};
+    data.reflectGood = '';
+    data.reflectEffort = '';
+    data.reflectNext = '';
+    data.selfNote = '';
+    saveData();
+
+    document.querySelectorAll('.goal-input').forEach(function (el, i) { el.value = DEFAULT_GOALS[i]; });
+    document.querySelectorAll('.cell-btn.checked').forEach(function (btn) {
+      btn.classList.remove('checked');
+      if (btn.classList.contains('num')) btn.textContent = '';
+    });
+    document.querySelectorAll('.reflect-input').forEach(function (el) { el.value = ''; });
+    selfNoteArea.value = '';
+    recalcSummary();
+
+    resetModalBackdrop.classList.remove('show');
+  });
+
+  /* =====================================================================
+     フレーム描画（レイアウト確定後に実行）
+     ===================================================================== */
+
+  applyFrames();
 })();

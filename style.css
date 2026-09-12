@@ -7,6 +7,10 @@
   --yellow: #FEC919;
   --ink: #3E4A57;
   --ink-soft: #8b95a1;
+  --ex-tint: #FDEDEF;
+  --life-tint: #FDF3E4;
+  --cond-tint: #EAF3EA;
+  --cond-color: #6FA377;
 }
 
 *{ box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -16,13 +20,13 @@ html,body{
   padding:0;
   background: var(--cream);
   color: var(--ink);
-  font-family: "Quicksand", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: "M PLUS Rounded 1c", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 .page{
-  max-width: 760px;
+  max-width: 820px;
   margin: 0 auto;
-  padding: 32px 20px 60px;
+  padding: 30px 16px 60px;
 }
 
 /* ---------- hero ---------- */
@@ -31,170 +35,284 @@ html,body{
   margin-bottom: 26px;
 }
 .title{
-  font-family: "Baloo 2", sans-serif;
-  font-weight: 800;
-  font-size: clamp(40px, 11vw, 68px);
+  font-family: "Hachi Maru Pop", sans-serif;
+  font-weight: 400;
+  font-size: clamp(30px, 8vw, 46px);
   color: var(--blue);
   margin: 0 0 14px;
-  letter-spacing: .01em;
   transform: rotate(-1deg);
 }
-
 .badge-row{
   display:flex;
   align-items:center;
   justify-content:center;
   gap: 10px;
+  margin-bottom: 16px;
 }
-.star{
-  width: clamp(26px, 5.5vw, 34px);
-  height: clamp(26px, 5.5vw, 34px);
-  flex-shrink: 0;
-}
+.star{ width: clamp(22px, 5vw, 30px); height: clamp(22px, 5vw, 30px); flex-shrink: 0; }
 .pill{
-  font-family: "Quicksand", sans-serif;
   font-weight: 700;
-  font-size: clamp(11px, 3.6vw, 17px);
+  font-size: clamp(12px, 3.4vw, 16px);
   line-height: 1.35;
   color: #fff;
   background: var(--pink-deep);
-  padding: 10px 20px;
+  padding: 9px 20px;
   border-radius: 999px;
   max-width: 100%;
   text-align: center;
 }
 
-/* ---------- month / year ---------- */
 .date-row{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  margin-bottom: 30px;
-}
-.date-box{
-  position: relative;
-  height: 56px;
-}
-.date-box svg{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  overflow: visible;
-}
-.date-box .date-inner{
-  position:absolute;
-  inset:0;
   display:flex;
   align-items:center;
-  gap: 8px;
-  padding: 0 20px;
+  justify-content:center;
+  gap: 12px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 }
-.date-label{
-  font-family: "Quicksand", sans-serif;
-  font-weight: 700;
-  color: var(--pink-deep);
-  font-size: 15px;
-  flex-shrink: 0;
-}
-.date-input{
-  border: none;
-  background: transparent;
-  outline: none;
-  font-family: "Quicksand", sans-serif;
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--ink);
-  width: 100%;
-  min-width: 0;
-}
-.date-input::placeholder{ color: var(--ink-soft); }
-
-/* ---------- habit cards ---------- */
-.cards-grid{
-  display:grid;
-  grid-template-columns: 1fr;
-  gap: 40px 24px;
-}
-@media (min-width: 680px){
-  .cards-grid{ grid-template-columns: 1fr 1fr; }
-}
-
-.tracker-card{
+.date-badge{
   position: relative;
-  padding: 30px 24px 34px;
+  padding: 9px 18px;
 }
-.tracker-card .frame-svg{
-  position:absolute;
-  inset:0;
-  width:100%;
-  height:100%;
-  overflow: visible;
-  pointer-events: none;
-}
-.sparkle{
-  position:absolute;
-  width: 34px;
-  height: 34px;
-  pointer-events: none;
-}
-
-.habit-head{
-  display:flex;
-  align-items: baseline;
-  gap: 8px;
-  margin-bottom: 6px;
-}
-.habit-label{
-  font-family: "Baloo 2", sans-serif;
+.date-badge svg{ position:absolute; inset:0; width:100%; height:100%; overflow:visible; }
+.date-badge span{
+  position: relative;
   font-weight: 700;
-  font-size: 19px;
-  color: var(--blue);
-  flex-shrink: 0;
+  font-size: 14px;
+  color: var(--blue-deep);
+  white-space: nowrap;
 }
-.habit-name-input{
-  border: none;
-  background: transparent;
-  outline: none;
-  font-family: "Quicksand", sans-serif;
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--ink);
-  padding: 2px 4px;
-  flex: 1;
-  min-width: 0;
-}
-.habit-name-input::placeholder{ color: var(--ink-soft); }
 
-.habit-underline{
-  border: none;
-  border-top: 2px dotted var(--blue);
-  opacity: .55;
+.reset-btn{
+  font-family: "M PLUS Rounded 1c", sans-serif;
+  font-size: 12.5px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 999px;
+  border: 2px solid var(--pink);
+  background: #fff;
+  color: var(--pink-deep);
+}
+.reset-btn:active{ background: var(--pink); color:#fff; }
+
+/* ---------- カード共通（手描き風フレーム） ---------- */
+.card{
+  position: relative;
+  margin: 0 0 36px;
+  padding: 26px 20px 22px;
+}
+.card .frame-svg{
+  position:absolute; inset:0; width:100%; height:100%;
+  overflow: visible; pointer-events: none;
+}
+.card-title{
+  font-family: "Hachi Maru Pop", sans-serif;
+  font-weight: 400;
+  font-size: 21px;
+  color: var(--blue);
+  margin: 0 0 4px;
+}
+.theme-pink .card-title{ color: var(--pink-deep); }
+.card-hint{
+  font-size: 12.5px;
+  color: var(--ink-soft);
   margin: 0 0 16px;
 }
 
-.habit-grid{
-  display: grid;
-  grid-template-columns: repeat(6, 1fr);
-  gap: 8px;
+/* ---------- 今月の目標 ---------- */
+.goals-list{ display:flex; flex-direction:column; gap:10px; }
+.goal-row{ display:flex; align-items:center; gap:8px; }
+.goal-num{
+  font-weight: 800;
+  color: var(--blue);
+  flex-shrink: 0;
+  width: 20px;
 }
-.cell{
-  aspect-ratio: 1 / 1;
-  border-radius: 8px;
-  border: 2.5px solid var(--blue);
+.goal-input{
+  flex:1;
+  min-width: 0;
+  border: none;
+  border-bottom: 2px dotted var(--blue);
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  padding: 4px 2px;
+}
+.goal-input:focus{ outline: none; border-bottom-color: var(--blue-deep); }
+
+/* ---------- 習慣トラッカー：テーブル ---------- */
+.table-wrap{
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 12px;
+}
+table.tracker-table{
+  border-collapse: separate;
+  border-spacing: 0;
+  font-size: 13px;
+}
+.tracker-table th, .tracker-table td{
+  padding: 0;
+  text-align: center;
+}
+.tracker-table thead th{
+  font-weight: 700;
+  color: var(--ink);
+  padding: 4px 2px;
+  min-width: 34px;
+}
+.tracker-table thead .wd{
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+}
+.tracker-table thead .today-col{ color: var(--pink-deep); }
+
+.row-label{
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  text-align: left !important;
+  padding: 7px 10px !important;
+  font-weight: 700;
+  font-size: 13px;
+  white-space: nowrap;
   background: #fff;
-  cursor: pointer;
+  border-right: 2px solid #eee2cf;
+}
+.group-ex .row-label{ background: var(--ex-tint); }
+.group-life .row-label{ background: var(--life-tint); }
+.group-cond .row-label{ background: var(--cond-tint); }
+
+.group-head td{
+  padding: 10px 6px 4px !important;
+  text-align: left !important;
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+.group-head.group-ex td{ background: var(--ex-tint); color: var(--pink-deep); }
+.group-head.group-life td{ background: var(--life-tint); color: #b3862f; }
+.group-head.group-cond td{ background: var(--cond-tint); color: var(--cond-color); }
+.group-head .row-label{ background: transparent; }
+
+.day-cell{
+  width: 34px;
+  height: 34px;
+  padding: 2px !important;
+}
+.today-col{ background: rgba(255,133,180,0.14); }
+
+.cell-btn{
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--blue);
+  border-radius: 7px;
+  background: #fff;
   padding: 0;
   display:flex;
   align-items:center;
   justify-content:center;
+  cursor: pointer;
 }
-.cell .mark{
-  width: 62%;
-  height: 62%;
-  color: var(--blue-deep);
-  opacity: 0;
-  transform: scale(.4);
-  transition: opacity .1s ease, transform .15s cubic-bezier(.34,1.6,.64,1);
+.cell-btn:disabled{ opacity: .3; border-color: #ccc; }
+.cell-btn .mark{ width: 60%; height: 60%; color: var(--blue-deep); opacity:0; transform: scale(.4); transition: opacity .1s, transform .15s cubic-bezier(.34,1.6,.64,1); }
+.cell-btn.checked .mark{ opacity:1; transform: scale(1); }
+.cell-btn.num{ border-color: var(--cond-color); font-weight: 700; color: var(--cond-color); font-size: 13px; }
+.cell-btn.num.checked{ background: var(--cond-color); color:#fff; }
+.cell-btn.non-friday{ visibility: hidden; }
+
+/* ---------- 今月のふりかえり ---------- */
+.reflect-list{ display:flex; flex-direction:column; gap: 14px; }
+.reflect-row label{
+  display:block;
+  font-weight: 700;
+  font-size: 13.5px;
+  color: var(--pink-deep);
+  margin-bottom: 4px;
 }
-.cell.checked .mark{ opacity: 1; transform: scale(1); }
+.reflect-input{
+  width: 100%;
+  border: none;
+  border-bottom: 2px dotted var(--pink);
+  background: transparent;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  padding: 4px 2px;
+}
+.reflect-input:focus{ outline:none; border-bottom-color: var(--pink-deep); }
+
+/* ---------- 今月のまとめ ---------- */
+.summary-list{ display:flex; flex-direction:column; gap: 10px; }
+.summary-row{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px dashed #dfe6ea;
+  padding-bottom: 8px;
+  font-size: 14.5px;
+}
+.summary-row .label{ font-weight: 600; }
+.summary-row .value{ font-weight: 800; color: var(--blue-deep); font-size: 16px; }
+.summary-row .unit{ font-size: 12px; color: var(--ink-soft); font-weight: 600; margin-left: 2px; }
+
+/* ---------- 自分へのひとこと ---------- */
+.note-area{
+  width: 100%;
+  border: 2px solid #f3d9e4;
+  border-radius: 12px;
+  background: #fffafc;
+  padding: 12px 14px;
+  font-family: inherit;
+  font-size: 15px;
+  color: var(--ink);
+  resize: vertical;
+}
+.note-area:focus{ outline: none; border-color: var(--pink); }
+
+/* ---------- モーダル共通 ---------- */
+.modal-backdrop{
+  position: fixed; inset:0;
+  background: rgba(62,74,87,.35);
+  display:none; align-items:center; justify-content:center;
+  padding: 20px; z-index: 50;
+}
+.modal-backdrop.show{ display:flex; }
+.modal-box{
+  width:100%; max-width: 320px;
+  background:#fff; border-radius:18px;
+  padding: 22px 20px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.2);
+}
+.modal-title{
+  font-weight: 800;
+  font-size: 15.5px;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.modal-sub{ font-size:12px; color: var(--ink-soft); margin:0 0 18px; }
+.modal-actions{ display:flex; gap:10px; margin-top: 10px; }
+.modal-btn{
+  flex:1; padding: 11px 0; border-radius: 10px; border:none;
+  font-family: inherit; font-weight: 700; font-size: 14px;
+}
+.modal-btn.cancel{ background:#f1ece2; color: var(--ink); }
+.modal-btn.confirm{ background: var(--pink-deep); color:#fff; }
+
+.number-grid{
+  display:grid; grid-template-columns: repeat(5,1fr); gap:8px;
+  margin: 14px 0 6px;
+}
+.number-grid button{
+  aspect-ratio: 1/1;
+  border-radius: 10px;
+  border: 2px solid var(--cond-color);
+  background: #fff;
+  color: var(--cond-color);
+  font-weight: 800;
+  font-size: 15px;
+}
+.number-grid button.selected{ background: var(--cond-color); color:#fff; }
