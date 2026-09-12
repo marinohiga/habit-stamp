@@ -1,83 +1,47 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-<title>ハビットスタンプ</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Habit Tracker</title>
 
-<!-- PWA / iPhoneホーム画面対応 -->
-<link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#FCF8F2">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="ハビットスタンプ">
-<link rel="apple-touch-icon" href="icon-192.png">
-<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Quicksand:wght@500;600;700&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<header class="top-bar">
-  <h1>ハビットスタンプ</h1>
-  <div class="top-bar-right">
-    <span id="monthLabel" class="month-label"></span>
-    <button id="resetBtn" type="button" class="reset-btn">↺ 今月をリセット</button>
-  </div>
-</header>
+<!-- 手描き風の線に使うSVGフィルター（画面には表示しない） -->
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="wobble1" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.045" numOctaves="2" seed="3" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="wobble2" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.05" numOctaves="2" seed="11" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <filter id="wobble3" x="-20%" y="-20%" width="140%" height="140%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.016 0.04" numOctaves="2" seed="19" result="n"/>
+      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </defs>
+</svg>
 
-<p class="hint">運動・生活習慣は✓、体調・メンタルは数字、ふりかえりは文章をタップで記録。ピンチで拡大・縮小できます。</p>
+<div class="page">
 
-<main>
-  <div class="tracker-wrap" id="trackerWrap">
-    <div class="tracker-inner" id="trackerInner">
-      <img src="tracker.png" alt="なりたい自分になるために ハビットトラッカー" class="tracker-img" draggable="false">
-      <div class="overlay" id="overlay"></div>
-    </div>
-  </div>
+  <header class="hero">
+    <h1 class="title">Habit Tracker</h1>
+    <div class="badge-row" id="badgeRow"></div>
+  </header>
 
-  <div class="extra-chip">
-    <span class="extra-chip-label">ストレッチ・ほぐし</span>
-    <span class="extra-chip-value" id="stretchChipValue">0</span>
-    <span class="extra-chip-unit">日</span>
-  </div>
-</main>
+  <div class="date-row" id="dateRow"></div>
 
-<!-- リセット確認ダイアログ -->
-<div class="modal-backdrop" id="modalBackdrop">
-  <div class="modal-box" role="alertdialog" aria-modal="true" aria-labelledby="modalTitle">
-    <p id="modalTitle" class="modal-title">今月の記録をリセットしますか？</p>
-    <p class="modal-sub">この操作は取り消せません。</p>
-    <div class="modal-actions">
-      <button id="modalCancel" type="button" class="modal-btn cancel">キャンセル</button>
-      <button id="modalConfirm" type="button" class="modal-btn confirm">リセットする</button>
-    </div>
-  </div>
-</div>
+  <div class="cards-grid" id="cardsGrid"></div>
 
-<!-- 1〜10 数値選択ダイアログ（体調・メンタル用） -->
-<div class="modal-backdrop" id="numberModalBackdrop">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="numberModalTitle">
-    <p id="numberModalTitle" class="modal-title">–</p>
-    <div class="number-grid" id="numberGrid"></div>
-    <div class="modal-actions">
-      <button id="numberClear" type="button" class="modal-btn cancel">クリア</button>
-      <button id="numberClose" type="button" class="modal-btn cancel">閉じる</button>
-    </div>
-  </div>
-</div>
-
-<!-- テキスト入力ダイアログ（ふりかえり／自分へのひとこと用） -->
-<div class="modal-backdrop" id="textModalBackdrop">
-  <div class="modal-box" role="dialog" aria-modal="true" aria-labelledby="textModalTitle">
-    <p id="textModalTitle" class="modal-title">–</p>
-    <input type="text" id="textModalInput" class="text-input-field" maxlength="60" placeholder="入力してください">
-    <textarea id="textModalArea" class="text-input-area" maxlength="400" rows="5" placeholder="入力してください"></textarea>
-    <div class="modal-actions">
-      <button id="textModalClear" type="button" class="modal-btn cancel">クリア</button>
-      <button id="textModalSave" type="button" class="modal-btn confirm">保存</button>
-    </div>
-  </div>
 </div>
 
 <script src="app.js"></script>
