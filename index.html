@@ -7,75 +7,52 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Hachi+Maru+Pop&family=M+PLUS+Rounded+1c:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Reggae+One&family=Bebas+Neue&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
 
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- 手描き風の線に使うSVGフィルター（画面には表示しない） -->
-<svg width="0" height="0" style="position:absolute">
-  <defs>
-    <filter id="wobble1" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.018 0.045" numOctaves="2" seed="3" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <filter id="wobble2" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.02 0.05" numOctaves="2" seed="11" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-    <filter id="wobble3" x="-20%" y="-20%" width="140%" height="140%">
-      <feTurbulence type="fractalNoise" baseFrequency="0.016 0.04" numOctaves="2" seed="19" result="n"/>
-      <feDisplacementMap in="SourceGraphic" in2="n" scale="7" xChannelSelector="R" yChannelSelector="G"/>
-    </filter>
-  </defs>
-</svg>
+<div class="paper-bg" aria-hidden="true"></div>
+
+<!-- 浮遊する装飾（スパークル・ハート） -->
+<div class="floaters" id="floaters" aria-hidden="true"></div>
 
 <div class="page">
 
   <header class="hero">
-    <h1 class="title">ハビットトラッカー</h1>
-    <div class="badge-row" id="badgeRow"></div>
-    <div class="date-row" id="dateRow"></div>
-    <button type="button" id="resetBtn" class="reset-btn">↺ 今月をリセット</button>
+    <div class="hero-deco" aria-hidden="true"></div>
+    <p class="eyebrow">STAY CONSISTENT, STAY YOU</p>
+    <h1 class="title">ハビット<span class="title-accent">トラッカー</span></h1>
+    <p class="tagline">なりたい自分になるために</p>
   </header>
 
-  <section class="card theme-blue" id="goalsCard">
-    <h2 class="card-title">今月の目標</h2>
-    <div id="goalsList" class="goals-list"></div>
-  </section>
+  <nav class="tab-bar" id="tabBar" aria-label="月を選択"></nav>
 
-  <section class="card theme-pink" id="gridCard">
-    <h2 class="card-title">習慣トラッカー</h2>
-    <p class="card-hint">運動・生活習慣はタップで✓、体調・メンタルはタップで1〜10を選択</p>
-    <div class="table-wrap" id="tableWrap"></div>
-  </section>
-
-  <section class="card theme-pink" id="reflectCard">
-    <h2 class="card-title">今月のふりかえり</h2>
-    <div id="reflectList" class="reflect-list"></div>
-  </section>
-
-  <section class="card theme-blue" id="summaryCard">
-    <h2 class="card-title">今月のまとめ</h2>
-    <div id="summaryList" class="summary-list"></div>
-  </section>
-
-  <section class="card theme-pink" id="noteCard">
-    <h2 class="card-title">自分へのひとこと</h2>
-    <textarea id="selfNoteArea" class="note-area" rows="5" maxlength="400" placeholder="今月の自分にひとこと"></textarea>
-  </section>
+  <main class="tab-content" id="tabContent"></main>
 
 </div>
 
 <!-- リセット確認ダイアログ -->
 <div class="modal-backdrop" id="resetModalBackdrop">
   <div class="modal-box">
-    <p class="modal-title">今月の記録をリセットしますか？</p>
+    <p class="modal-title">このタブの記録をリセットしますか？</p>
     <p class="modal-sub">この操作は取り消せません。</p>
     <div class="modal-actions">
       <button type="button" id="resetCancel" class="modal-btn cancel">キャンセル</button>
       <button type="button" id="resetConfirm" class="modal-btn confirm">リセットする</button>
+    </div>
+  </div>
+</div>
+
+<!-- タブ削除確認ダイアログ -->
+<div class="modal-backdrop" id="deleteModalBackdrop">
+  <div class="modal-box">
+    <p class="modal-title" id="deleteModalTitle">このタブを削除しますか？</p>
+    <p class="modal-sub">記録もすべて削除され、元に戻せません。</p>
+    <div class="modal-actions">
+      <button type="button" id="deleteCancel" class="modal-btn cancel">キャンセル</button>
+      <button type="button" id="deleteConfirm" class="modal-btn confirm">削除する</button>
     </div>
   </div>
 </div>
